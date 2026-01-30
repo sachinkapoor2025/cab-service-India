@@ -29,10 +29,10 @@ jobs:
         working-directory: frontend
         run: npm install
 
-      # 4️⃣ Build frontend
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
+      # # 4️⃣ Build frontend
+      # - name: Build frontend
+      #   working-directory: frontend
+      #   run: npm run build
 
       # 5️⃣ Configure AWS credentials (FIXED)
       - name: Configure AWS credentials
