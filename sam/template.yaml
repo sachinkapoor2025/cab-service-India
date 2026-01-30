@@ -9,13 +9,6 @@ Globals:
     MemorySize: 512
     Architectures:
       - x86_64
-    Environment:
-      Variables:
-        USERS_TABLE: !Ref UsersTable
-        DRIVERS_TABLE: !Ref DriversTable
-        RIDES_TABLE: !Ref RidesTable
-        BOOKINGS_TABLE: !Ref BookingsTable
-        SNS_TOPIC: !Ref EmergencySNSTopic
 
 Resources:
   # -------------------- DynamoDB --------------------
@@ -136,11 +129,19 @@ Resources:
       BucketName: !Sub cab-frontend-${AWS::StackName}
       WebsiteConfiguration:
         IndexDocument: index.html
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        BlockPublicPolicy: false
-        IgnorePublicAcls: false
-        RestrictPublicAccess: false
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "${FrontendBucket.Arn}/*"
 
   # -------------------- API --------------------
   CabApi:
@@ -162,6 +163,9 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref UsersTable
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
       Events:
         UsersApi:
           Type: Api
@@ -175,6 +179,9 @@ Resources:
     Properties:
       CodeUri: src/
       Handler: controllers/driverController.handler
+      Environment:
+        Variables:
+          DRIVERS_TABLE: !Ref DriversTable
       Events:
         DriversApi:
           Type: Api
@@ -188,6 +195,9 @@ Resources:
     Properties:
       CodeUri: src/
       Handler: controllers/rideController.handler
+      Environment:
+        Variables:
+          RIDES_TABLE: !Ref RidesTable
       Events:
         RidesApi:
           Type: Api
@@ -201,6 +211,9 @@ Resources:
     Properties:
       CodeUri: src/
       Handler: controllers/bookingController.handler
+      Environment:
+        Variables:
+          BOOKINGS_TABLE: !Ref BookingsTable
       Events:
         BookingsApi:
           Type: Api
@@ -227,6 +240,9 @@ Resources:
     Properties:
       CodeUri: src/
       Handler: services/emergencyService.handler
+      Environment:
+        Variables:
+          SNS_TOPIC: !Ref EmergencySNSTopic
       Events:
         EmergencyApi:
           Type: Api
@@ -239,6 +255,7 @@ Outputs:
   ApiUrl:
     Description: API Gateway URL
     Value: !Sub "https://${CabApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+
   FrontendBucketName:
     Description: S3 Bucket for Frontend
     Value: !Ref FrontendBucket
