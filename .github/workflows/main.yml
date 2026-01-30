@@ -12,9 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -22,27 +24,33 @@ jobs:
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
+      # 3️⃣ Install frontend dependencies
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm install
 
+      # # 4️⃣ Build frontend (uses npx vite build)
       # - name: Build frontend
       #   working-directory: frontend
       #   run: npm run build
 
+      # 5️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ap-south-1
 
+      # 6️⃣ Build & deploy backend using SAM
       - name: Deploy SAM backend
         working-directory: sam
         run: |
           sam build
           sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
 
+      # 7️⃣ Fetch frontend S3 bucket name from CloudFormation
       - name: Get S3 bucket name
         id: get-bucket
         run: |
@@ -52,6 +60,7 @@ jobs:
             --output text)
           echo "bucket=$BUCKET_NAME" >> $GITHUB_OUTPUT
 
+      # 8️⃣ Upload frontend build to S3
       - name: Upload frontend to S3
         run: |
           aws s3 sync frontend/dist s3://${{ steps.get-bucket.outputs.bucket }} --delete
