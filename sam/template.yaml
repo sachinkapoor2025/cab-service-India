@@ -4,9 +4,9 @@ Description: Cab & Shared Mobility Platform - Backend
 
 Globals:
   Function:
+    Runtime: nodejs18.x
     Timeout: 30
     MemorySize: 512
-    Runtime: nodejs18.x
     Architectures:
       - x86_64
     Environment:
@@ -18,11 +18,12 @@ Globals:
         SNS_TOPIC: !Ref EmergencySNSTopic
 
 Resources:
-  # DynamoDB Tables
+  # -------------------- DynamoDB --------------------
   UsersTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: CabUsers
+      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: id
           AttributeType: S
@@ -38,12 +39,12 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-      BillingMode: PAY_PER_REQUEST
 
   DriversTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: CabDrivers
+      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: id
           AttributeType: S
@@ -59,12 +60,12 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-      BillingMode: PAY_PER_REQUEST
 
   RidesTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: CabRides
+      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: id
           AttributeType: S
@@ -92,12 +93,12 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-      BillingMode: PAY_PER_REQUEST
 
   BookingsTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: CabBookings
+      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: id
           AttributeType: S
@@ -121,201 +122,123 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-      BillingMode: PAY_PER_REQUEST
 
-  # SNS Topic
+  # -------------------- SNS --------------------
   EmergencySNSTopic:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: CabEmergencyAlerts
 
-  # S3 Bucket for Frontend
+  # -------------------- S3 --------------------
   FrontendBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub cab-frontend-${AWS::StackName}
+      WebsiteConfiguration:
+        IndexDocument: index.html
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
         IgnorePublicAcls: false
         RestrictPublicAccess: false
-      WebsiteConfiguration:
-        IndexDocument: index.html
 
-  # IAM Role for Lambda
-  LambdaExecutionRole:
-    Type: AWS::IAM::Role
+  # -------------------- API --------------------
+  CabApi:
+    Type: AWS::Serverless::Api
     Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: DynamoDBAccess
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:DeleteItem
-                  - dynamodb:Query
-                  - dynamodb:Scan
-                Resource:
-                  - !GetAtt UsersTable.Arn
-                  - !GetAtt DriversTable.Arn
-                  - !GetAtt RidesTable.Arn
-                  - !GetAtt BookingsTable.Arn
-        - PolicyName: SNSAccess
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action: sns:Publish
-                Resource: !Ref EmergencySNSTopic
+      StageName: prod
+      EndpointConfiguration: REGIONAL
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
 
-  # Lambda Functions
+  # -------------------- Lambda Functions --------------------
   UserManagementFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CabUserManagement
-      CodeUri: ../sam/src
+      CodeUri: src/
       Handler: controllers/userController.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        UsersApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CabApi
+            Path: /users
+            Method: ANY
 
   DriverManagementFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CabDriverManagement
-      CodeUri: ../sam/src
+      CodeUri: src/
       Handler: controllers/driverController.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        DriversApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CabApi
+            Path: /drivers
+            Method: ANY
 
   RideManagementFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CabRideManagement
-      CodeUri: ../sam/src
+      CodeUri: src/
       Handler: controllers/rideController.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        RidesApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CabApi
+            Path: /rides
+            Method: ANY
 
   BookingManagementFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CabBookingManagement
-      CodeUri: ../sam/src
+      CodeUri: src/
       Handler: controllers/bookingController.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        BookingsApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CabApi
+            Path: /bookings
+            Method: ANY
 
   FareCalculationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CabFareCalculation
-      CodeUri: ../sam/src
+      CodeUri: src/
       Handler: services/fareService.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        FareApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CabApi
+            Path: /fare
+            Method: POST
 
   EmergencyAlertFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CabEmergencyAlert
-      CodeUri: ../sam/src
+      CodeUri: src/
       Handler: services/emergencyService.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
-
-  # API Gateway
-  CabApi:
-    Type: AWS::Serverless::HttpApi
-    Properties:
-      CorsConfiguration:
-        AllowMethods:
-          - GET
-          - POST
-          - PUT
-          - DELETE
-        AllowOrigins:
-          - "*"
-      RouteSettings:
-        ThrottlingBurstLimit: 100
-        ThrottlingRateLimit: 50
-    DefinitionBody:
-      openapi: "3.0.1"
-      info:
-        title: Cab API
-        version: "1.0"
-      paths:
-        /users:
-          get:
-            x-amazon-apigateway-integration:
-              type: aws_proxy
-              httpMethod: POST
-              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UserManagementFunction.Arn}/invocations
-          post:
-            x-amazon-apigateway-integration:
-              type: aws_proxy
-              httpMethod: POST
-              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UserManagementFunction.Arn}/invocations
-        /drivers:
-          get:
-            x-amazon-apigateway-integration:
-              type: aws_proxy
-              httpMethod: POST
-              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DriverManagementFunction.Arn}/invocations
-          post:
-            x-amazon-apigateway-integration:
-              type: aws_proxy
-              httpMethod: POST
-              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DriverManagementFunction.Arn}/invocations
-        /rides:
-          get:
-            x-amazon-apigateway-integration:
-              type: aws_proxy
-              httpMethod: POST
-              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RideManagementFunction.Arn}/invocations
-          post:
-            x-amazon-apigateway-integration:
-              type: aws_proxy
-              httpMethod: POST
-              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RideManagementFunction.Arn}/invocations
-        /bookings:
-          get:
-            x-amazon-apigateway-integration:
-              type: aws_proxy
-              httpMethod: POST
-              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${BookingManagementFunction.Arn}/invocations
-          post:
-            x-amazon-apigateway-integration:
-              type: aws_proxy
-              httpMethod: POST
-              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${BookingManagementFunction.Arn}/invocations
-        /fare:
-          post:
-            x-amazon-apigateway-integration:
-              type: aws_proxy
-              httpMethod: POST
-              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FareCalculationFunction.Arn}/invocations
-        /emergency:
-          post:
-            x-amazon-apigateway-integration:
-              type: aws_proxy
-              httpMethod: POST
-              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EmergencyAlertFunction.Arn}/invocations
+      Events:
+        EmergencyApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CabApi
+            Path: /emergency
+            Method: POST
 
 Outputs:
   ApiUrl:
     Description: API Gateway URL
-    Value: !Sub https://${CabApi}.execute-api.${AWS::Region}.amazonaws.com
-    Export:
-      Name: CabApiUrl
+    Value: !Sub "https://${CabApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
   FrontendBucketName:
     Description: S3 Bucket for Frontend
     Value: !Ref FrontendBucket
-    Export:
-      Name: CabFrontendBucketName
