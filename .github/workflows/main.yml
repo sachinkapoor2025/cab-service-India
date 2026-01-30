@@ -29,17 +29,18 @@ jobs:
         working-directory: frontend
         run: npm install
 
-      # # 4️⃣ Build frontend
+      # # 4️⃣ Build frontend (uses npx vite build)
       # - name: Build frontend
       #   working-directory: frontend
       #   run: npm run build
 
-      # 5️⃣ Configure AWS credentials (FIXED)
+      # 5️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ap-south-1
 
       # 6️⃣ Build & deploy backend using SAM
