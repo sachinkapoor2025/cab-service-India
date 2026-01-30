@@ -126,7 +126,8 @@ Resources:
   FrontendBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub cab-frontend-${AWS::StackName}
+      BucketName: !Sub cab-frontend-${AWS::StackName}-${AWS::AccountId}
+
       WebsiteConfiguration:
         IndexDocument: index.html
 
