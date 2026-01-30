@@ -30,9 +30,9 @@ jobs:
         run: npm install
 
       # 4️⃣ Build frontend (uses npx vite build)
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
+      # - name: Build frontend
+      #   working-directory: frontend
+      #   run: npm run build
 
       # 5️⃣ Configure AWS credentials
       - name: Configure AWS credentials
