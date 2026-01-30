@@ -12,23 +12,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
-      # - name: Install backend dependencies
-      #   run: cd backend && npm install
-
+      # 3️⃣ Install frontend dependencies
       - name: Install frontend dependencies
-        run: cd frontend && npm install
+        working-directory: frontend
+        run: npm install
 
+      # 4️⃣ Build frontend (uses npx vite build)
       - name: Build frontend
-        run: cd frontend && npm run build
+        working-directory: frontend
+        run: npm run build
 
+      # 5️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -37,18 +43,24 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ap-south-1
 
+      # 6️⃣ Build & deploy backend using SAM
       - name: Deploy SAM backend
+        working-directory: sam
         run: |
-          cd sam
           sam build
           sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
 
+      # 7️⃣ Fetch frontend S3 bucket name from CloudFormation
       - name: Get S3 bucket name
         id: get-bucket
         run: |
-          BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name cab-mobility-platform --query "Stacks[0].Outputs[?OutputKey=='FrontendBucketName'].OutputValue" --output text)
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name cab-mobility-platform \
+            --query "Stacks[0].Outputs[?OutputKey=='FrontendBucketName'].OutputValue" \
+            --output text)
           echo "bucket=$BUCKET_NAME" >> $GITHUB_OUTPUT
 
+      # 8️⃣ Upload frontend build to S3
       - name: Upload frontend to S3
         run: |
           aws s3 sync frontend/dist s3://${{ steps.get-bucket.outputs.bucket }} --delete
