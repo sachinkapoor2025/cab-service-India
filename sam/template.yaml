@@ -1,0 +1,321 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Cab & Shared Mobility Platform - Backend
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs18.x
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        USERS_TABLE: !Ref UsersTable
+        DRIVERS_TABLE: !Ref DriversTable
+        RIDES_TABLE: !Ref RidesTable
+        BOOKINGS_TABLE: !Ref BookingsTable
+        SNS_TOPIC: !Ref EmergencySNSTopic
+
+Resources:
+  # DynamoDB Tables
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: CabUsers
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: phone
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: PhoneIndex
+          KeySchema:
+            - AttributeName: phone
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+
+  DriversTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: CabDrivers
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: phone
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: PhoneIndex
+          KeySchema:
+            - AttributeName: phone
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+
+  RidesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: CabRides
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: driverId
+          AttributeType: S
+        - AttributeName: route
+          AttributeType: S
+        - AttributeName: dateTime
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: DriverIndex
+          KeySchema:
+            - AttributeName: driverId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: RouteDateIndex
+          KeySchema:
+            - AttributeName: route
+              KeyType: HASH
+            - AttributeName: dateTime
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+
+  BookingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: CabBookings
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: rideId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: RideIndex
+          KeySchema:
+            - AttributeName: rideId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+
+  # SNS Topic
+  EmergencySNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: CabEmergencyAlerts
+
+  # S3 Bucket for Frontend
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub cab-frontend-${AWS::StackName}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicAccess: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  # IAM Role for Lambda
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt UsersTable.Arn
+                  - !GetAtt DriversTable.Arn
+                  - !GetAtt RidesTable.Arn
+                  - !GetAtt BookingsTable.Arn
+        - PolicyName: SNSAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref EmergencySNSTopic
+
+  # Lambda Functions
+  UserManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CabUserManagement
+      CodeUri: ../backend/src
+      Handler: controllers/userController.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  DriverManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CabDriverManagement
+      CodeUri: ../backend/src
+      Handler: controllers/driverController.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  RideManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CabRideManagement
+      CodeUri: ../backend/src
+      Handler: controllers/rideController.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  BookingManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CabBookingManagement
+      CodeUri: ../backend/src
+      Handler: controllers/bookingController.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  FareCalculationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CabFareCalculation
+      CodeUri: ../backend/src
+      Handler: services/fareService.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  EmergencyAlertFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CabEmergencyAlert
+      CodeUri: ../backend/src
+      Handler: services/emergencyService.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  # API Gateway
+  CabApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+        AllowOrigins:
+          - "*"
+      RouteSettings:
+        ThrottlingBurstLimit: 100
+        ThrottlingRateLimit: 50
+    DefinitionBody:
+      openapi: "3.0.1"
+      info:
+        title: Cab API
+        version: "1.0"
+      paths:
+        /users:
+          get:
+            x-amazon-apigateway-integration:
+              type: aws_proxy
+              httpMethod: POST
+              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UserManagementFunction.Arn}/invocations
+          post:
+            x-amazon-apigateway-integration:
+              type: aws_proxy
+              httpMethod: POST
+              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UserManagementFunction.Arn}/invocations
+        /drivers:
+          get:
+            x-amazon-apigateway-integration:
+              type: aws_proxy
+              httpMethod: POST
+              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DriverManagementFunction.Arn}/invocations
+          post:
+            x-amazon-apigateway-integration:
+              type: aws_proxy
+              httpMethod: POST
+              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DriverManagementFunction.Arn}/invocations
+        /rides:
+          get:
+            x-amazon-apigateway-integration:
+              type: aws_proxy
+              httpMethod: POST
+              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RideManagementFunction.Arn}/invocations
+          post:
+            x-amazon-apigateway-integration:
+              type: aws_proxy
+              httpMethod: POST
+              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RideManagementFunction.Arn}/invocations
+        /bookings:
+          get:
+            x-amazon-apigateway-integration:
+              type: aws_proxy
+              httpMethod: POST
+              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${BookingManagementFunction.Arn}/invocations
+          post:
+            x-amazon-apigateway-integration:
+              type: aws_proxy
+              httpMethod: POST
+              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${BookingManagementFunction.Arn}/invocations
+        /fare:
+          post:
+            x-amazon-apigateway-integration:
+              type: aws_proxy
+              httpMethod: POST
+              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FareCalculationFunction.Arn}/invocations
+        /emergency:
+          post:
+            x-amazon-apigateway-integration:
+              type: aws_proxy
+              httpMethod: POST
+              uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EmergencyAlertFunction.Arn}/invocations
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL
+    Value: !Sub https://${CabApi}.execute-api.${AWS::Region}.amazonaws.com
+    Export:
+      Name: CabApiUrl
+  FrontendBucketName:
+    Description: S3 Bucket for Frontend
+    Value: !Ref FrontendBucket
+    Export:
+      Name: CabFrontendBucketName
