@@ -61,7 +61,7 @@ jobs:
             --output text)
           echo "bucket=$BUCKET_NAME" >> $GITHUB_OUTPUT
 
-      # 8️⃣     Upload frontend build to S3
+      # 8️⃣       Upload frontend build to S3
 
       - name: Upload frontend to S3
         run: |
