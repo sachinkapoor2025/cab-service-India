@@ -31,7 +31,7 @@ jobs:
 
       - name: Build frontend
         working-directory: frontend
-        run: npx --no-install vite build
+        run: node node_modules/vite/bin/vite.js build
 
       # 4️⃣ Configure AWS credentials
       - name: Configure AWS credentials
