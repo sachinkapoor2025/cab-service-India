@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 interface BookingState {
   source: string;
@@ -22,13 +23,10 @@ const Booking = () => {
   const handleBook = async () => {
     try {
       // Mock booking API call
-      await axios.post<{ id: string }>(
-        `${import.meta.env.VITE_API_URL}/bookings`,
-        {
-          rideId: "mock-ride-id", // In real app, get from search results
-          seatsBooked: seats,
-        },
-      );
+      await axios.post<{ id: string }>(`${API_BASE_URL}/bookings`, {
+        rideId: "mock-ride-id", // In real app, get from search results
+        seatsBooked: seats,
+      });
       alert("Booking confirmed!");
       navigate("/");
     } catch (error) {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 const EmergencyButton = () => {
   const [showConfirm, setShowConfirm] = useState(false);
@@ -7,7 +8,7 @@ const EmergencyButton = () => {
   const handleEmergency = async () => {
     try {
       // Try API call
-      await axios.post(`${import.meta.env.VITE_API_URL}/emergency`, {
+      await axios.post(`${API_BASE_URL}/emergency`, {
         message: "Emergency alert triggered",
         location: "Current location", // In real app, get GPS
       });

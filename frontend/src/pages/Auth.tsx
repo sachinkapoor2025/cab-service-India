@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 type AuthMode = "login" | "signup";
 
@@ -24,7 +25,7 @@ const Auth = () => {
   const handleVerifyOtp = async () => {
     try {
       const response = await axios.post<{ id: string; phone: string }>(
-        `${import.meta.env.VITE_API_URL}/users`,
+        `${API_BASE_URL}/users`,
         {
           phone,
         },

@@ -6,6 +6,7 @@ import Auth from "./pages/Auth";
 import RideSearch from "./pages/RideSearch";
 import Booking from "./pages/Booking";
 import History from "./pages/History";
+import Callback from "./pages/Callback";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/callback" element={<Callback />} />
             <Route path="/search" element={<RideSearch />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/history" element={<History />} />
