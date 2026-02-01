@@ -2,6 +2,11 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: Cab & Shared Mobility Platform - Backend
 
+Parameters:
+  FrontendDomainName:
+    Type: String
+    Default: yeshola.com
+
 Globals:
   Function:
     Runtime: nodejs18.x
@@ -121,6 +126,76 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: CabEmergencyAlerts
+
+  #################################
+  # Cognito
+  #################################
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: cab-campus-booking
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: cab-campus-client
+      UserPoolId: !Ref CognitoUserPool
+      GenerateSecret: false
+
+      # REQUIRED for Hosted UI
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - implicit
+        - code
+
+      AllowedOAuthScopes:
+        - openid
+        - email
+        - profile
+
+      SupportedIdentityProviders:
+        - COGNITO
+
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+      CallbackURLs:
+        - !Sub "https://${FrontendDomainName}/callback"
+        - !Sub "https://${FrontendDomainName}/new.html"
+
+      LogoutURLs:
+        - !Sub "https://${FrontendDomainName}"
+        - !Sub "https://${FrontendDomainName}/auth/logout-success.html"
+
+  CognitoDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: cab-campus-auth
+      UserPoolId: !Ref CognitoUserPool
+
+  CognitoAdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Admin
+      UserPoolId: !Ref CognitoUserPool
+
+  CognitoEmployeeGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Employee
+      UserPoolId: !Ref CognitoUserPool
 
   # -------------------- S3 --------------------
   FrontendBucket:
