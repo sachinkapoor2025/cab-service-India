@@ -36,7 +36,7 @@ Resources:
   DriversTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: CabDrivers
+      TableName: CabDriversV2
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
       - AttributeName: id
@@ -46,13 +46,6 @@ Resources:
       KeySchema:
       - AttributeName: id
         KeyType: HASH
-      GlobalSecondaryIndexes:
-      - IndexName: UserIndex
-        KeySchema:
-        - AttributeName: userId
-          KeyType: HASH
-        Projection:
-          ProjectionType: ALL
   RidesTable:
     Type: AWS::DynamoDB::Table
     Properties:
