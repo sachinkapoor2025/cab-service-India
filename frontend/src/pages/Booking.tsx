@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "../config";
+import { useAuth } from "../contexts/AuthContext";
+import { rideApi } from "../services/api";
+import RideConfirmation from "../components/RideConfirmation";
 
 interface BookingState {
   source: string;
@@ -16,51 +17,95 @@ interface BookingState {
 const Booking = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { source, destination, date, time, rideType } =
     (location.state as BookingState) || {};
+
   const [seats, setSeats] = useState(1);
+  const [isShared, setIsShared] = useState(rideType === "SHARED");
+  const [femaleOnly, setFemaleOnly] = useState(false);
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  const totalFare = isShared ? 50 * seats : 200; // Mock pricing
 
   const handleBook = async () => {
-    try {
-      // Mock booking API call
-      await axios.post<{ id: string }>(`${API_BASE_URL}/bookings`, {
-        rideId: "mock-ride-id", // In real app, get from search results
-        seatsBooked: seats,
-      });
-      alert("Booking confirmed!");
-      navigate("/");
-    } catch (error) {
-      console.error("Booking error:", error);
-      alert("Booking failed - using demo mode");
-      // Demo mode: save to localStorage
-      const booking = {
-        id: "demo-" + Date.now(),
+    if (!user) {
+      alert("Please login first");
+      navigate("/auth");
+      return;
+    }
+
+    // Show confirmation modal for private rides
+    if (!isShared) {
+      setShowConfirmation(true);
+      return;
+    }
+
+    // For shared rides, navigate to search with form data
+    navigate("/search", {
+      state: {
         source,
         destination,
         date,
         time,
-        rideType,
-        seats,
-        fare: totalFare,
-        status: "confirmed",
-      };
-      const existingBookings = JSON.parse(
-        localStorage.getItem("rideHistory") || "[]",
-      );
-      existingBookings.push(booking);
-      localStorage.setItem("rideHistory", JSON.stringify(existingBookings));
-      alert("Booking confirmed in demo mode!");
+        femaleOnly,
+        route: `${source}-${destination}`.toLowerCase().replace(/\s+/g, ""),
+        dateTime: isScheduled
+          ? new Date(`${date}T${time}`).toISOString()
+          : new Date().toISOString(),
+      },
+    });
+  };
+
+  const confirmBooking = async () => {
+    setLoading(true);
+    setShowConfirmation(false);
+
+    try {
+      // Create route hash for matching
+      const route = `${source}-${destination}`
+        .toLowerCase()
+        .replace(/\s+/g, "");
+
+      const dateTime = isScheduled
+        ? new Date(`${date}T${time}`).toISOString()
+        : new Date().toISOString();
+
+      // For private rides, create the ride directly
+      const response = await rideApi.createRide({
+        requesterId: user!.id,
+        source,
+        destination,
+        route,
+        dateTime,
+        seats: 1, // Private ride - requester takes 1 seat
+        farePerSeat: 200, // Fixed private ride fare
+        isShared: false,
+        femaleOnly,
+      });
+
+      alert("Private ride booked successfully!");
       navigate("/history");
+    } catch (error) {
+      console.error("Booking error:", error);
+      alert("Booking failed - please try again");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const totalFare = rideType === "shared" ? 50 * seats : 200; // Mock pricing
+  const cancelBooking = () => {
+    setShowConfirmation(false);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">
-      <h2 className="text-2xl font-bold mb-4">Confirm Booking</h2>
-      <div className="space-y-4">
-        <div>
+      <h2 className="text-2xl font-bold mb-6">Book Your Ride</h2>
+      <div className="space-y-6">
+        {/* Route Info */}
+        <div className="bg-gray-50 p-4 rounded-lg">
           <p>
             <strong>From:</strong> {source}
           </p>
@@ -73,34 +118,135 @@ const Booking = () => {
           <p>
             <strong>Time:</strong> {time}
           </p>
-          <p>
-            <strong>Type:</strong> {rideType}
+        </div>
+
+        {/* Ride Options */}
+        <div className="space-y-4">
+          {/* Ride Type */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Ride Type</label>
+            <div className="flex space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={!isShared}
+                  onChange={() => setIsShared(false)}
+                  className="mr-2"
+                />
+                Private
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={isShared}
+                  onChange={() => setIsShared(true)}
+                  className="mr-2"
+                />
+                Shared
+              </label>
+            </div>
+          </div>
+
+          {/* Booking Type */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Booking Type
+            </label>
+            <div className="flex space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={!isScheduled}
+                  onChange={() => setIsScheduled(false)}
+                  className="mr-2"
+                />
+                Book Now
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  checked={isScheduled}
+                  onChange={() => setIsScheduled(true)}
+                  className="mr-2"
+                />
+                Schedule
+              </label>
+            </div>
+          </div>
+
+          {/* Female Only */}
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={femaleOnly}
+                onChange={(e) => setFemaleOnly(e.target.checked)}
+                className="mr-2"
+              />
+              Female-only ride
+            </label>
+          </div>
+
+          {/* Seats */}
+          {isShared && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Number of Seats
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="4"
+                value={seats}
+                onChange={(e) => setSeats(Number(e.target.value))}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Fare Summary */}
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <p className="text-lg font-bold text-blue-800">
+            Total Fare: ₹{totalFare}
+          </p>
+          <p className="text-sm text-blue-600">
+            {isShared ? `₹50 per seat` : "Private ride"}
           </p>
         </div>
-        {rideType === "shared" && (
-          <div>
-            <label className="block mb-2">Seats:</label>
-            <input
-              type="number"
-              min="1"
-              max="4"
-              value={seats}
-              onChange={(e) => setSeats(Number(e.target.value))}
-              className="w-full p-2 border rounded"
-            />
-          </div>
-        )}
-        <div className="bg-gray-100 p-4 rounded">
-          <p className="text-lg font-bold">Total Fare: ₹{totalFare}</p>
-          {rideType === "shared" && <p className="text-sm">₹50 per seat</p>}
-        </div>
+
+        {/* Book Button */}
         <button
           onClick={handleBook}
-          className="w-full bg-blue-500 text-white py-2 rounded"
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors disabled:opacity-50"
         >
-          Confirm Booking
+          {loading
+            ? "Processing..."
+            : isShared
+              ? "Search Shared Rides"
+              : "Book Private Ride"}
         </button>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <RideConfirmation
+          rideDetails={{
+            source,
+            destination,
+            dateTime: isScheduled
+              ? `${date}T${time}`
+              : new Date().toISOString(),
+            rideType: "Private",
+            fare: totalFare,
+            isShared: false,
+            femaleOnly,
+          }}
+          onConfirm={confirmBooking}
+          onCancel={cancelBooking}
+        />
+      )}
     </div>
   );
 };

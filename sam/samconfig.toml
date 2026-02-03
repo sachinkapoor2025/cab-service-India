@@ -3,6 +3,7 @@ version = 0.1
 [default]
 [default.global.parameters]
 stack_name = "cab-mobility-platform"
+region = "ap-south-1"
 
 [default.build.parameters]
 cached = true
@@ -10,10 +11,13 @@ parallel = true
 
 [default.deploy.parameters]
 capabilities = "CAPABILITY_IAM"
-confirm_changeset = false
+confirm_changeset = true
 resolve_s3 = true
 region = "ap-south-1"
 fail_on_empty_changeset = false
+s3_prefix = "cab-mobility-platform"
+parameter_overrides = "FrontendDomainName=\"yeshola.com\""
+image_repositories = []
 
 [default.package.parameters]
 resolve_s3 = true

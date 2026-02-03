@@ -63,7 +63,7 @@ const Home = () => {
             Your perfect ride from campus to anywhere! Share rides, save money,
             and make friends along the way. 🎓✨
           </p>
-          <div className="flex justify-center space-x-4">
+          <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             {user ? (
               <Link
                 to="/search"
@@ -72,12 +72,20 @@ const Home = () => {
                 🎯 Find Your Ride
               </Link>
             ) : (
-              <Link
-                to="/auth"
-                className="bg-white text-purple-600 hover:bg-yellow-300 font-bold py-4 px-8 rounded-full text-lg transition-all transform hover:scale-105 shadow-lg"
-              >
-                🎓 Join CampusRide
-              </Link>
+              <>
+                <Link
+                  to="/auth?role=STUDENT"
+                  className="bg-white text-purple-600 hover:bg-blue-100 font-bold py-4 px-8 rounded-full text-lg transition-all transform hover:scale-105 shadow-lg"
+                >
+                  🎓 Login as Student
+                </Link>
+                <Link
+                  to="/auth?role=DRIVER"
+                  className="bg-white text-green-600 hover:bg-green-100 font-bold py-4 px-8 rounded-full text-lg transition-all transform hover:scale-105 shadow-lg"
+                >
+                  🚗 Login as Driver
+                </Link>
+              </>
             )}
           </div>
         </div>

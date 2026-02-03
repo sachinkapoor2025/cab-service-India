@@ -1,0 +1,510 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Transform: AWS::Serverless-2016-10-31
+
+Description: Cab & Shared Mobility Platform - Backend
+
+Parameters:
+  FrontendDomainName:
+    Type: String
+
+    Default: yeshola.com
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+
+    Timeout: 30
+
+    MemorySize: 512
+
+    Architectures:
+      - x86_64
+
+Resources:
+  # -------------------- DynamoDB --------------------
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+
+    Properties:
+      TableName: CabUsers
+
+      BillingMode: PAY_PER_REQUEST
+
+      AttributeDefinitions:
+        - AttributeName: id
+
+          AttributeType: S
+
+        - AttributeName: phone
+
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: id
+
+          KeyType: HASH
+
+      GlobalSecondaryIndexes:
+        - IndexName: PhoneIndex
+
+          KeySchema:
+            - AttributeName: phone
+
+              KeyType: HASH
+
+          Projection:
+            ProjectionType: ALL
+
+  DriversTable:
+    Type: AWS::DynamoDB::Table
+
+    Properties:
+      TableName: CabDriversV2
+
+      BillingMode: PAY_PER_REQUEST
+
+      AttributeDefinitions:
+        - AttributeName: id
+
+          AttributeType: S
+
+        - AttributeName: userId
+
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: id
+
+          KeyType: HASH
+
+      # â GSI REMOVED TEMPORARILY TO AVOID UPDATE FAILURE
+
+  RidesTable:
+    Type: AWS::DynamoDB::Table
+
+    Properties:
+      TableName: CabRides
+
+      BillingMode: PAY_PER_REQUEST
+
+      AttributeDefinitions:
+        - AttributeName: id
+
+          AttributeType: S
+
+        - AttributeName: driverId
+
+          AttributeType: S
+
+        - AttributeName: requesterId
+
+          AttributeType: S
+
+        - AttributeName: route
+
+          AttributeType: S
+
+        - AttributeName: dateTime
+
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: id
+
+          KeyType: HASH
+
+      GlobalSecondaryIndexes:
+        - IndexName: DriverIndex
+
+          KeySchema:
+            - AttributeName: driverId
+
+              KeyType: HASH
+
+          Projection:
+            ProjectionType: ALL
+
+        - IndexName: RequesterIndex
+
+          KeySchema:
+            - AttributeName: requesterId
+
+              KeyType: HASH
+
+          Projection:
+            ProjectionType: ALL
+
+        - IndexName: RouteDateIndex
+
+          KeySchema:
+            - AttributeName: route
+
+              KeyType: HASH
+
+            - AttributeName: dateTime
+
+              KeyType: RANGE
+
+          Projection:
+            ProjectionType: ALL
+
+  BookingsTable:
+    Type: AWS::DynamoDB::Table
+
+    Properties:
+      TableName: CabBookings
+
+      BillingMode: PAY_PER_REQUEST
+
+      AttributeDefinitions:
+        - AttributeName: id
+
+          AttributeType: S
+
+        - AttributeName: userId
+
+          AttributeType: S
+
+        - AttributeName: rideId
+
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: id
+
+          KeyType: HASH
+
+      GlobalSecondaryIndexes:
+        - IndexName: UserIndex
+
+          KeySchema:
+            - AttributeName: userId
+
+              KeyType: HASH
+
+          Projection:
+            ProjectionType: ALL
+
+        - IndexName: RideIndex
+
+          KeySchema:
+            - AttributeName: rideId
+
+              KeyType: HASH
+
+          Projection:
+            ProjectionType: ALL
+
+  # -------------------- SNS --------------------
+
+  EmergencySNSTopic:
+    Type: AWS::SNS::Topic
+
+    Properties:
+      TopicName: CabEmergencyAlerts
+
+  #################################
+
+  # Cognito
+
+  #################################
+
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+
+    Properties:
+      UserPoolName: cab-campus-booking
+
+      UsernameAttributes:
+        - email
+
+      AutoVerifiedAttributes:
+        - email
+
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+
+          RequireUppercase: true
+
+          RequireLowercase: true
+
+          RequireNumbers: true
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+
+    Properties:
+      ClientName: cab-campus-client
+
+      UserPoolId: !Ref CognitoUserPool
+
+      GenerateSecret: false
+
+      AllowedOAuthFlowsUserPoolClient: true
+
+      AllowedOAuthFlows:
+        - implicit
+
+        - code
+
+      AllowedOAuthScopes:
+        - openid
+
+        - email
+
+        - profile
+
+      SupportedIdentityProviders:
+        - COGNITO
+
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+
+        - ALLOW_USER_SRP_AUTH
+
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+      CallbackURLs:
+        - !Sub "https://${FrontendDomainName}/callback"
+
+        - !Sub "https://${FrontendDomainName}/new.html"
+
+      LogoutURLs:
+        - !Sub "https://${FrontendDomainName}"
+
+        - !Sub "https://${FrontendDomainName}/auth/logout-success.html"
+
+  CognitoDomain:
+    Type: AWS::Cognito::UserPoolDomain
+
+    Properties:
+      Domain: cab-campus-auth
+
+      UserPoolId: !Ref CognitoUserPool
+
+  CognitoAdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+
+    Properties:
+      GroupName: Admin
+
+      UserPoolId: !Ref CognitoUserPool
+
+  CognitoEmployeeGroup:
+    Type: AWS::Cognito::UserPoolGroup
+
+    Properties:
+      GroupName: Employee
+
+      UserPoolId: !Ref CognitoUserPool
+
+  # -------------------- S3 --------------------
+
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+
+    Properties:
+      BucketName: !Sub cab-frontend-${AWS::StackName}-${AWS::AccountId}
+
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+
+        BlockPublicPolicy: false
+
+        IgnorePublicAcls: false
+
+        RestrictPublicBuckets: false
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+
+    Properties:
+      Bucket: !Ref FrontendBucket
+
+      PolicyDocument:
+        Version: "2012-10-17"
+
+        Statement:
+          - Sid: PublicReadGetObject
+
+            Effect: Allow
+
+            Principal: "*"
+
+            Action: "s3:GetObject"
+
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+
+  # -------------------- API --------------------
+
+  CabApi:
+    Type: AWS::Serverless::Api
+
+    Properties:
+      StageName: prod
+
+      EndpointConfiguration: REGIONAL
+
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE'"
+
+        AllowHeaders: "'*'"
+
+        AllowOrigin: "'*'"
+
+  # -------------------- Lambda Functions --------------------
+
+  UserManagementFunction:
+    Type: AWS::Serverless::Function
+
+    Properties:
+      CodeUri: src/
+
+      Handler: controllers/userController.handler
+
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+
+      Events:
+        UsersApi:
+          Type: Api
+
+          Properties:
+            RestApiId: !Ref CabApi
+
+            Path: /users
+
+            Method: ANY
+
+  DriverManagementFunction:
+    Type: AWS::Serverless::Function
+
+    Properties:
+      CodeUri: src/
+
+      Handler: controllers/driverController.handler
+
+      Environment:
+        Variables:
+          DRIVERS_TABLE: !Ref DriversTable
+
+      Events:
+        DriversApi:
+          Type: Api
+
+          Properties:
+            RestApiId: !Ref CabApi
+
+            Path: /drivers
+
+            Method: ANY
+
+  RideManagementFunction:
+    Type: AWS::Serverless::Function
+
+    Properties:
+      CodeUri: src/
+
+      Handler: controllers/rideController.handler
+
+      Environment:
+        Variables:
+          RIDES_TABLE: !Ref RidesTable
+
+      Events:
+        RidesApi:
+          Type: Api
+
+          Properties:
+            RestApiId: !Ref CabApi
+
+            Path: /rides
+
+            Method: ANY
+
+  BookingManagementFunction:
+    Type: AWS::Serverless::Function
+
+    Properties:
+      CodeUri: src/
+
+      Handler: controllers/bookingController.handler
+
+      Environment:
+        Variables:
+          BOOKINGS_TABLE: !Ref BookingsTable
+
+      Events:
+        BookingsApi:
+          Type: Api
+
+          Properties:
+            RestApiId: !Ref CabApi
+
+            Path: /bookings
+
+            Method: ANY
+
+  FareCalculationFunction:
+    Type: AWS::Serverless::Function
+
+    Properties:
+      CodeUri: src/
+
+      Handler: services/fareService.handler
+
+      Events:
+        FareApi:
+          Type: Api
+
+          Properties:
+            RestApiId: !Ref CabApi
+
+            Path: /fare
+
+            Method: POST
+
+  EmergencyAlertFunction:
+    Type: AWS::Serverless::Function
+
+    Properties:
+      CodeUri: src/
+
+      Handler: controllers/emergencyController.handler
+
+      Environment:
+        Variables:
+          SNS_TOPIC: !Ref EmergencySNSTopic
+
+      Events:
+        EmergencyApi:
+          Type: Api
+
+          Properties:
+            RestApiId: !Ref CabApi
+
+            Path: /emergency/trigger
+
+            Method: POST
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL
+
+    Value: !Sub "https://${CabApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+
+  FrontendBucketName:
+    Description: S3 Bucket for Frontend
+
+    Value: !Ref FrontendBucket
