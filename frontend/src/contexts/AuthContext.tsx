@@ -5,12 +5,6 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import {
-  COGNITO_AUTH_URL,
-  COGNITO_CLIENT_ID,
-  REDIRECT_URI,
-  LOGOUT_URI,
-} from "../config";
 
 interface User {
   id: string;
@@ -34,7 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
@@ -50,7 +44,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check if user is already logged in
     const storedUser = localStorage.getItem("user");
     const storedRole = localStorage.getItem("role");
     const storedAuth = localStorage.getItem("isAuthenticated");
@@ -62,46 +55,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const login = (role: "STUDENT" | "DRIVER") => {
-    // Build Cognito authorization URL with state parameter
-    const state = JSON.stringify({ role });
-    const authUrl =
-      `${COGNITO_AUTH_URL}/oauth2/authorize?` +
-      new URLSearchParams({
-        client_id: COGNITO_CLIENT_ID,
-        response_type: "code",
-        scope: "openid email profile",
-        redirect_uri: REDIRECT_URI,
-        state: state,
-      });
-
-    // Redirect to Cognito
-    window.location.href = authUrl;
+  // ✅ FIXED: login ONLY sets role, does NOT redirect
+  const login = (selectedRole: "STUDENT" | "DRIVER") => {
+    localStorage.setItem("role", selectedRole);
+    setRole(selectedRole);
   };
 
   const logout = () => {
-    // Clear local storage
-    localStorage.removeItem("user");
-    localStorage.removeItem("role");
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("id_token");
-    localStorage.removeItem("refresh_token");
-
-    // Redirect to Cognito logout
-    const logoutUrl =
-      `${COGNITO_AUTH_URL}/logout?` +
-      new URLSearchParams({
-        client_id: COGNITO_CLIENT_ID,
-        logout_uri: LOGOUT_URI,
-      });
-
+    localStorage.clear();
     setUser(null);
     setRole(null);
     setIsAuthenticated(false);
-
-    // Redirect to logout page
-    window.location.href = logoutUrl;
+    window.location.href = "/";
   };
 
   const updateUser = (userData: Partial<User>) => {
@@ -112,14 +77,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const value: AuthContextType = {
-    user,
-    role,
-    isAuthenticated,
-    login,
-    logout,
-    updateUser,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        role,
+        isAuthenticated,
+        login,
+        logout,
+        updateUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
