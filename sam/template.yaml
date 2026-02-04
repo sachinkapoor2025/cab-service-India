@@ -17,110 +17,62 @@ Globals:
 
 Resources:
   # -------------------- DynamoDB --------------------
-  UsersTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub CabUsers-${AWS::StackName}
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-        - AttributeName: phone
-          AttributeType: S
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: PhoneIndex
-          KeySchema:
-            - AttributeName: phone
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
+UsersTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: !Sub CabUsers-${AWS::StackName}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: phone
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: PhoneIndex
+        KeySchema:
+          - AttributeName: phone
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
 
-  DriversTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub CabDrivers-${AWS::StackName}
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-        - AttributeName: userId
-          AttributeType: S
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
+DriversTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: !Sub CabDrivers-${AWS::StackName}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
 
-  RidesTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub CabRides-${AWS::StackName}
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-        - AttributeName: driverId
-          AttributeType: S
-        - AttributeName: requesterId
-          AttributeType: S
-        - AttributeName: route
-          AttributeType: S
-        - AttributeName: dateTime
-          AttributeType: S
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: DriverIndex
-          KeySchema:
-            - AttributeName: driverId
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-        - IndexName: RequesterIndex
-          KeySchema:
-            - AttributeName: requesterId
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-        - IndexName: RouteDateIndex
-          KeySchema:
-            - AttributeName: route
-              KeyType: HASH
-            - AttributeName: dateTime
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
+RidesTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: !Sub CabRides-${AWS::StackName}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
 
-  BookingsTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub CabBookings-${AWS::StackName}
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-        - AttributeName: userId
-          AttributeType: S
-        - AttributeName: rideId
-          AttributeType: S
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: UserIndex
-          KeySchema:
-            - AttributeName: userId
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-        - IndexName: RideIndex
-          KeySchema:
-            - AttributeName: rideId
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
+BookingsTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: !Sub CabBookings-${AWS::StackName}
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
 
   # -------------------- SNS --------------------
   EmergencySNSTopic:
