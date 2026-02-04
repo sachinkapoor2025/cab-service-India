@@ -15,7 +15,7 @@ confirm_changeset = true
 resolve_s3 = true
 region = "ap-south-1"
 fail_on_empty_changeset = false
-s3_prefix = "cab-mobility-platform"
+s3_prefix = "cab-mobility-app-1"
 parameter_overrides = "FrontendDomainName=\"yeshola.com\""
 image_repositories = []
 
