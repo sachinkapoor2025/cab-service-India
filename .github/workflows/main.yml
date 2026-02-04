@@ -60,7 +60,7 @@ jobs:
         id: get-bucket
         run: |
           BUCKET_NAME=$(aws cloudformation describe-stacks \
-            --stack-name cab-mobility-platform \
+            --stack-name cab-mobility-app-1 \
             --query "Stacks[0].Outputs[?OutputKey=='FrontendBucketName'].OutputValue" \
             --output text)
           echo "bucket=$BUCKET_NAME" >> $GITHUB_OUTPUT
