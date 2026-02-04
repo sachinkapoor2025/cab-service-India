@@ -2,7 +2,7 @@ version = 0.1
 
 [default]
 [default.global.parameters]
-stack_name = "cab-mobility-platform"
+stack_name = "cab-mobility-app"
 region = "ap-south-1"
 
 [default.build.parameters]
