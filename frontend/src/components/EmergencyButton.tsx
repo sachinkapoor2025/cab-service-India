@@ -9,6 +9,12 @@ interface EmergencyContact {
 
 const EmergencyButton: React.FC = () => {
   const { user } = useAuth();
+
+  // Defensive guard: return null if auth context is not available
+  if (!user) {
+    return null;
+  }
+
   const [showConfirm, setShowConfirm] = useState(false);
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [hasActiveRide, setHasActiveRide] = useState(false);

@@ -1,21 +1,23 @@
 import { useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { COGNITO_DOMAIN, COGNITO_CLIENT_ID } from "../config";
+import { useSearchParams } from "react-router-dom";
+import { COGNITO_AUTH_URL, COGNITO_CLIENT_ID } from "../config";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const role = searchParams.get("role") || "STUDENT";
 
   useEffect(() => {
-    // Redirect to Cognito Hosted UI
-    const domain = COGNITO_DOMAIN;
-    const clientId = COGNITO_CLIENT_ID;
     const redirectUri = `${window.location.origin}/callback`;
 
-    const cognitoUrl = `https://${domain}.auth.ap-south-1.amazoncognito.com/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(
-      redirectUri,
-    )}&state=${encodeURIComponent(JSON.stringify({ role }))}`;
+    const cognitoUrl =
+      `${COGNITO_AUTH_URL}/oauth2/authorize?` +
+      new URLSearchParams({
+        client_id: COGNITO_CLIENT_ID,
+        response_type: "code",
+        scope: "openid email profile",
+        redirect_uri: redirectUri,
+        state: JSON.stringify({ role }),
+      });
 
     window.location.href = cognitoUrl;
   }, [role]);
