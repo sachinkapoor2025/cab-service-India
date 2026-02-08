@@ -47,11 +47,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const storedUser = localStorage.getItem("user");
     const storedRole = localStorage.getItem("role");
     const storedAuth = localStorage.getItem("isAuthenticated");
+    const accessToken = localStorage.getItem("access_token");
 
-    if (storedUser && storedRole && storedAuth === "true") {
-      setUser(JSON.parse(storedUser));
-      setRole(storedRole);
-      setIsAuthenticated(true);
+    // Check if user is authenticated with valid tokens
+    if (storedUser && storedRole && storedAuth === "true" && accessToken) {
+      // Check if token is expired
+      if (isTokenExpired(accessToken)) {
+        // Clear expired auth data
+        localStorage.removeItem("user");
+        localStorage.removeItem("role");
+        localStorage.removeItem("isAuthenticated");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("id_token");
+        localStorage.removeItem("refresh_token");
+        setUser(null);
+        setRole(null);
+        setIsAuthenticated(false);
+      } else {
+        setUser(JSON.parse(storedUser));
+        setRole(storedRole);
+        setIsAuthenticated(true);
+      }
+    } else {
+      // Clear invalid auth data
+      localStorage.removeItem("user");
+      localStorage.removeItem("role");
+      localStorage.removeItem("isAuthenticated");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("id_token");
+      localStorage.removeItem("refresh_token");
+      setUser(null);
+      setRole(null);
+      setIsAuthenticated(false);
     }
   }, []);
 
@@ -59,6 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = (selectedRole: "STUDENT" | "DRIVER") => {
     localStorage.setItem("role", selectedRole);
     setRole(selectedRole);
+    setIsAuthenticated(true);
   };
 
   const logout = () => {
@@ -74,6 +102,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
+    }
+  };
+
+  // Helper function to check if token is expired
+  const isTokenExpired = (token: string): boolean => {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp < currentTime;
+    } catch {
+      return true;
     }
   };
 
