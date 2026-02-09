@@ -11,7 +11,7 @@ export const REDIRECT_URI =
   import.meta.env.VITE_REDIRECT_URI || `${window.location.origin}/callback`;
 export const LOGOUT_URI =
   import.meta.env.VITE_LOGOUT_URI ||
-  `${window.location.origin}/auth/logout-success.html`;
+  "https://d1p4u2h5n2nrie.cloudfront.net/callback";
 
 // Cognito URLs
 export const COGNITO_AUTH_URL = `https://${COGNITO_DOMAIN}.auth.${COGNITO_REGION}.amazoncognito.com`;

@@ -7,19 +7,36 @@ const Auth = () => {
   const role = searchParams.get("role") || "STUDENT";
 
   useEffect(() => {
-    const redirectUri = `${window.location.origin}/callback`;
+    try {
+      const redirectUri = `${window.location.origin}/callback`;
 
-    const cognitoUrl =
-      `${COGNITO_AUTH_URL}/oauth2/authorize?` +
-      new URLSearchParams({
-        client_id: COGNITO_CLIENT_ID,
-        response_type: "code",
-        scope: "openid email profile",
-        redirect_uri: redirectUri,
-        state: JSON.stringify({ role }),
-      });
+      console.log("Auth page loaded with role:", role);
+      console.log("Cognito Auth URL:", COGNITO_AUTH_URL);
+      console.log("Client ID:", COGNITO_CLIENT_ID);
+      console.log("Redirect URI:", redirectUri);
 
-    window.location.href = cognitoUrl;
+      if (!COGNITO_AUTH_URL || !COGNITO_CLIENT_ID) {
+        console.error("Missing Cognito configuration");
+        throw new Error("Cognito configuration is missing");
+      }
+
+      const cognitoUrl =
+        `${COGNITO_AUTH_URL}/oauth2/authorize?` +
+        new URLSearchParams({
+          client_id: COGNITO_CLIENT_ID,
+          response_type: "code",
+          scope: "openid email profile",
+          redirect_uri: redirectUri,
+          state: JSON.stringify({ role }),
+        });
+
+      console.log("Redirecting to:", cognitoUrl);
+      window.location.href = cognitoUrl;
+    } catch (error) {
+      console.error("Auth redirect error:", error);
+      // Fallback to home page
+      window.location.href = "/";
+    }
   }, [role]);
 
   return (
@@ -35,6 +52,9 @@ const Auth = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
         <p className="text-sm text-gray-500 mt-4">
           You'll be redirected to our secure login page
+        </p>
+        <p className="text-xs text-gray-400 mt-2">
+          If redirect fails, please check console for errors
         </p>
       </div>
     </div>
