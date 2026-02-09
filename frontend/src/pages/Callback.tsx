@@ -63,7 +63,7 @@ const Callback = () => {
         window.history.replaceState({}, document.title, "/");
 
         setTimeout(() => {
-          navigate(userRole === "DRIVER" ? "/driver-dashboard" : "/", {
+          navigate(userRole === "DRIVER" ? "/driver-dashboard" : "/booking", {
             replace: true,
           });
         }, 300);

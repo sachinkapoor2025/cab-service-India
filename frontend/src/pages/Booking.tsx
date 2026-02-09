@@ -21,14 +21,22 @@ const Booking = () => {
   const { source, destination, date, time, rideType } =
     (location.state as BookingState) || {};
 
-  const [seats, setSeats] = useState(1);
+  const [formData, setFormData] = useState({
+    source: source || "",
+    destination: destination || "",
+    date: date || "",
+    time: time || "",
+    rideType: rideType || "PRIVATE",
+    seats: 1,
+    femaleOnly: false,
+    isScheduled: false,
+  });
+
   const [isShared, setIsShared] = useState(rideType === "SHARED");
-  const [femaleOnly, setFemaleOnly] = useState(false);
-  const [isScheduled, setIsScheduled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const totalFare = isShared ? 50 * seats : 200; // Mock pricing
+  const totalFare = isShared ? 50 * formData.seats : 200; // Mock pricing
 
   const handleBook = async () => {
     if (!user) {
@@ -46,14 +54,16 @@ const Booking = () => {
     // For shared rides, navigate to search with form data
     navigate("/search", {
       state: {
-        source,
-        destination,
-        date,
-        time,
-        femaleOnly,
-        route: `${source}-${destination}`.toLowerCase().replace(/\s+/g, ""),
-        dateTime: isScheduled
-          ? new Date(`${date}T${time}`).toISOString()
+        source: formData.source,
+        destination: formData.destination,
+        date: formData.date,
+        time: formData.time,
+        femaleOnly: formData.femaleOnly,
+        route: `${formData.source}-${formData.destination}`
+          .toLowerCase()
+          .replace(/\s+/g, ""),
+        dateTime: formData.isScheduled
+          ? new Date(`${formData.date}T${formData.time}`).toISOString()
           : new Date().toISOString(),
       },
     });
@@ -65,25 +75,25 @@ const Booking = () => {
 
     try {
       // Create route hash for matching
-      const route = `${source}-${destination}`
+      const route = `${formData.source}-${formData.destination}`
         .toLowerCase()
         .replace(/\s+/g, "");
 
-      const dateTime = isScheduled
-        ? new Date(`${date}T${time}`).toISOString()
+      const dateTime = formData.isScheduled
+        ? new Date(`${formData.date}T${formData.time}`).toISOString()
         : new Date().toISOString();
 
       // For private rides, create the ride directly
       const response = await rideApi.createRide({
         requesterId: user!.id,
-        source,
-        destination,
+        source: formData.source,
+        destination: formData.destination,
         route,
         dateTime,
         seats: 1, // Private ride - requester takes 1 seat
         farePerSeat: 200, // Fixed private ride fare
         isShared: false,
-        femaleOnly,
+        femaleOnly: formData.femaleOnly,
       });
 
       alert("Private ride booked successfully!");
@@ -107,16 +117,16 @@ const Booking = () => {
         {/* Route Info */}
         <div className="bg-gray-50 p-4 rounded-lg">
           <p>
-            <strong>From:</strong> {source}
+            <strong>From:</strong> {formData.source}
           </p>
           <p>
-            <strong>To:</strong> {destination}
+            <strong>To:</strong> {formData.destination}
           </p>
           <p>
-            <strong>Date:</strong> {date}
+            <strong>Date:</strong> {formData.date}
           </p>
           <p>
-            <strong>Time:</strong> {time}
+            <strong>Time:</strong> {formData.time}
           </p>
         </div>
 
@@ -156,8 +166,10 @@ const Booking = () => {
               <label className="flex items-center">
                 <input
                   type="radio"
-                  checked={!isScheduled}
-                  onChange={() => setIsScheduled(false)}
+                  checked={!formData.isScheduled}
+                  onChange={() =>
+                    setFormData({ ...formData, isScheduled: false })
+                  }
                   className="mr-2"
                 />
                 Book Now
@@ -165,8 +177,10 @@ const Booking = () => {
               <label className="flex items-center">
                 <input
                   type="radio"
-                  checked={isScheduled}
-                  onChange={() => setIsScheduled(true)}
+                  checked={formData.isScheduled}
+                  onChange={() =>
+                    setFormData({ ...formData, isScheduled: true })
+                  }
                   className="mr-2"
                 />
                 Schedule
@@ -179,8 +193,10 @@ const Booking = () => {
             <label className="flex items-center">
               <input
                 type="checkbox"
-                checked={femaleOnly}
-                onChange={(e) => setFemaleOnly(e.target.checked)}
+                checked={formData.femaleOnly}
+                onChange={(e) =>
+                  setFormData({ ...formData, femaleOnly: e.target.checked })
+                }
                 className="mr-2"
               />
               Female-only ride
@@ -197,8 +213,10 @@ const Booking = () => {
                 type="number"
                 min="1"
                 max="4"
-                value={seats}
-                onChange={(e) => setSeats(Number(e.target.value))}
+                value={formData.seats}
+                onChange={(e) =>
+                  setFormData({ ...formData, seats: Number(e.target.value) })
+                }
                 className="w-full p-2 border rounded"
               />
             </div>
@@ -233,15 +251,15 @@ const Booking = () => {
       {showConfirmation && (
         <RideConfirmation
           rideDetails={{
-            source,
-            destination,
-            dateTime: isScheduled
-              ? `${date}T${time}`
+            source: formData.source,
+            destination: formData.destination,
+            dateTime: formData.isScheduled
+              ? `${formData.date}T${formData.time}`
               : new Date().toISOString(),
             rideType: "Private",
             fare: totalFare,
             isShared: false,
-            femaleOnly,
+            femaleOnly: formData.femaleOnly,
           }}
           onConfirm={confirmBooking}
           onCancel={cancelBooking}
