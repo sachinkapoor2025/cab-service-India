@@ -497,7 +497,8 @@ Resources:
             Path: /emergency/trigger
 
             Method: POST
-
+            
+   
 Outputs:
   ApiUrl:
     Description: API Gateway URL
