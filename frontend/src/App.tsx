@@ -12,6 +12,7 @@ import DriverDashboard from "./pages/DriverDashboard";
 import DriverProfile from "./pages/DriverProfile";
 import DriverRide from "./pages/DriverRide";
 import SharedRideRequests from "./pages/SharedRideRequests";
+import Debug from "./pages/Debug";
 
 // Protected Route Component
 const ProtectedRoute = ({
@@ -123,6 +124,9 @@ function App() {
 
           {/* Auto-redirect based on role */}
           <Route path="/dashboard" element={<RoleBasedRedirect />} />
+
+          {/* Debug Route */}
+          <Route path="/debug" element={<Debug />} />
         </Routes>
       </main>
       <EmergencyButton />

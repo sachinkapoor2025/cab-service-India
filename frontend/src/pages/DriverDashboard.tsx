@@ -31,10 +31,8 @@ const DriverDashboard: React.FC = () => {
     setError(null);
 
     try {
-      // First check if driver profile exists
       const driverResponse = await driverApi.getDriver(user.id);
       if (!driverResponse.data) {
-        // Driver profile doesn't exist, use mock data for demo
         setAvailableRides([
           {
             id: "1",
@@ -62,13 +60,11 @@ const DriverDashboard: React.FC = () => {
         return;
       }
 
-      // Fetch actual available rides
       const response = await rideApi.getUserRides(user.id);
       setAvailableRides(response.data.rides || []);
     } catch (err) {
       console.error("Error fetching rides:", err);
       setError("Failed to fetch available rides. Please try again.");
-      // Fallback to mock data
       setAvailableRides([
         {
           id: "1",
@@ -93,7 +89,7 @@ const DriverDashboard: React.FC = () => {
     try {
       await rideApi.assignDriver(rideId, user.id);
       alert("Ride accepted successfully!");
-      fetchAvailableRides(); // Refresh the list
+      fetchAvailableRides();
     } catch (error) {
       console.error("Error accepting ride:", error);
       alert("Failed to accept ride. Please try again.");
@@ -101,8 +97,11 @@ const DriverDashboard: React.FC = () => {
   };
 
   const handleRejectRide = (rideId: string) => {
-    // For demo purposes, just remove from list
     setAvailableRides((prev) => prev.filter((ride) => ride.id !== rideId));
+  };
+
+  const handleLogout = () => {
+    logout();
   };
 
   const formatDateTime = (dateTime: string) => {
@@ -126,7 +125,6 @@ const DriverDashboard: React.FC = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            {/* Driver Info Card */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h2 className="text-xl font-semibold text-blue-800 mb-4">
                 👤 Driver Information
@@ -152,11 +150,11 @@ const DriverDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Available Rides */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-6">
               <h2 className="text-xl font-semibold text-green-800 mb-4">
                 📋 Available Rides
               </h2>
+
               {loading ? (
                 <div className="text-center py-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
@@ -221,7 +219,6 @@ const DriverDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Welcome Message */}
           <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-yellow-800 mb-2">
               🎉 Welcome to CampusRide Driver!

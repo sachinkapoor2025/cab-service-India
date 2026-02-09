@@ -1,5 +1,4 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 
 interface RideConfirmationProps {
   rideDetails: {
@@ -20,8 +19,6 @@ const RideConfirmation: React.FC<RideConfirmationProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  const navigate = useNavigate();
-
   const formatDateTime = (dateTime: string) => {
     return new Date(dateTime).toLocaleString();
   };
@@ -40,7 +37,6 @@ const RideConfirmation: React.FC<RideConfirmationProps> = ({
             </p>
           </div>
 
-          {/* Ride Details */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <div className="space-y-3">
               <div className="flex justify-between">
@@ -80,17 +76,16 @@ const RideConfirmation: React.FC<RideConfirmationProps> = ({
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex space-x-3">
             <button
               onClick={onCancel}
-              className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+              className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-semibold hover:bg-gray-300"
             >
               Cancel
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+              className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700"
             >
               Confirm Ride
             </button>

@@ -84,7 +84,7 @@ const Booking = () => {
         : new Date().toISOString();
 
       // For private rides, create the ride directly
-      const response = await rideApi.createRide({
+      await rideApi.createRide({
         requesterId: user!.id,
         source: formData.source,
         destination: formData.destination,
