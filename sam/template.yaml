@@ -8,7 +8,7 @@ Description: Cab & Shared Mobility Platform - Backend
 Parameters:
   FrontendDomainName:
     Type: String
-    Default: d1p4u2h5y2nrie.cloudfront.net
+    Default: d1p4u2h5y2nrie.cloudfront.net # ✅ FIXED domain
 
 Globals:
   Function:
@@ -109,7 +109,6 @@ Resources:
       GenerateSecret: false
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthFlows:
-        - implicit
         - code
       AllowedOAuthScopes:
         - openid
@@ -122,9 +121,7 @@ Resources:
         - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
       CallbackURLs:
-        - !Sub "https://${FrontendDomainName}/callback"
-        - !Sub "https://${FrontendDomainName}/new.html"
-
+        - !Sub "https://${FrontendDomainName}/Callback" # ✅ FIXED (case-sensitive)
       LogoutURLs:
         - !Sub "https://${FrontendDomainName}"
         - !Sub "https://${FrontendDomainName}/auth/logout-success.html"

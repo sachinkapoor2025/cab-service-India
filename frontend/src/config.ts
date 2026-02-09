@@ -8,10 +8,10 @@ export const COGNITO_REGION =
 export const COGNITO_USER_POOL_ID =
   import.meta.env.VITE_COGNITO_USER_POOL_ID || "";
 export const REDIRECT_URI =
-  import.meta.env.VITE_REDIRECT_URI || `${window.location.origin}/callback`;
+  import.meta.env.VITE_REDIRECT_URI || `${window.location.origin}/Callback`;
 export const LOGOUT_URI =
   import.meta.env.VITE_LOGOUT_URI ||
-  "https://d1p4u2h5n2nrie.cloudfront.net/callback";
+  `${window.location.origin}/auth/logout-success.html`;
 
 // Cognito URLs
 export const COGNITO_AUTH_URL = `https://${COGNITO_DOMAIN}.auth.${COGNITO_REGION}.amazoncognito.com`;

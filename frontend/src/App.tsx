@@ -13,7 +13,6 @@ import DriverProfile from "./pages/DriverProfile";
 import DriverRide from "./pages/DriverRide";
 import SharedRideRequests from "./pages/SharedRideRequests";
 import Debug from "./pages/Debug";
-import TestAuth from "./pages/TestAuth";
 
 // Protected Route Component
 const ProtectedRoute = ({
